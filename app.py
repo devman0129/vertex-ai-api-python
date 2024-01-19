@@ -57,3 +57,23 @@ else:
     print(f"\nEndpoint {ENDPOINT_NAME} doesn't exist, creating ...\n")
     endpoint = aiplatform.Endpoint.create(display_name=ENDPOINT_NAME)
     print(f"\nEndpoint - {ENDPOINT_NAME} was created successfully!\n")
+
+    print(f"\nDeplyoing model - {MODEL_NAME} to endpoint - {ENDPOINT_NAME} ...\n")
+
+    model.deploy(
+        endpoint = endpoint,
+        deployed_model_display_name = MODEL_NAME,
+        traffic_percentage = 100,
+        machine_type = "n1-standard-2",
+        min_replica_count = 1,
+        max_replica_count = 1,
+        accelerator_type = "NVIDIA_TESLA_T4",
+        accelerator_count = 1,
+        sync = True,
+    )
+
+    print("\nModel deployed - complete!\n")
+
+endpoint.undeploy_all()
+endpoint.delete()
+model.delete()
