@@ -3,13 +3,21 @@ from google.cloud.aiplatform import Endpoint, Model
 from google.api_core.exceptions import InvalidArgument
 from google.oauth2 import service_account
 
+KEY_FILE_PATH = "credentials.json"
+
 MODEL_NAME = "s2dr3"
 PROJECT_NAME = "s2dr3-202312"
-
 LOCATION = "us-central1"
-ENDPOINT_NAME = "endpoint_detector"
 
-credentials = service_account.Credentials.from_service_account_file('credentials.json')
+IMG_URI = "gcr.io/s2dr3-202312/s2dr3:success-1"
+
+PREDICT_PATH = "/predict"
+HEALTH_PATH = "/health"
+SERVER_PORT = 8080
+
+ENDPOINT_NAME = "s2dr3-endpoint"
+
+credentials = service_account.Credentials.from_service_account_file(KEY_FILE_PATH)
 
 aiplatform.init(
     project = PROJECT_NAME,
@@ -17,22 +25,35 @@ aiplatform.init(
     credentials = credentials
 )
 
-print("Checking imported model ...")
+print("\nChecking models ...\n")
 
 models = Model.list(filter=f'displayName="{MODEL_NAME}"')
 
 if models:
     model = models[0]
-    print(f"Model - {MODEL_NAME} was already imported successfully!")
+    print(f"\nModel - {MODEL_NAME} was already imported successfully!\n")
 
 else:
-    print(f"Model - {MODEL_NAME} was not detected. Started importing from container registry ...")
+    print(f"\nModel - {MODEL_NAME} was not detected. Started importing from container registry ...\n")
     model = aiplatform.Model.upload(
-        display_name=MODEL_NAME,
-        serving_container_image_uri="gcr.io/s2dr3-202312/s2dr3:success-1",
-        serving_container_predict_route="/predict",
-        serving_container_health_route="/health",
-        serving_container_ports=[8080],
+        display_name = MODEL_NAME,
+        serving_container_image_uri = IMG_URI,
+        serving_container_predict_route = PREDICT_PATH,
+        serving_container_health_route = HEALTH_PATH,
+        serving_container_ports=[SERVER_PORT],
         sync=True,
     )
     model.wait()
+    print(f"\nModel - {MODEL_NAME} was imported successfully!\n")
+
+print("\nChecking endpoints ...\n")
+
+endpoints = Endpoint.list(filter=f'displayName="{ENDPOINT_NAME}"')
+
+if endpoints:
+    endpoint = endpoints[0]
+    print(f"\nEndpoint - {ENDPOINT_NAME} was already created successfully!\n")
+else:
+    print(f"\nEndpoint {ENDPOINT_NAME} doesn't exist, creating ...\n")
+    endpoint = aiplatform.Endpoint.create(display_name=ENDPOINT_NAME)
+    print(f"\nEndpoint - {ENDPOINT_NAME} was created successfully!\n")
